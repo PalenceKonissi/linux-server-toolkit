@@ -1,0 +1,54 @@
+- name: Day 1 - Linux Server Hardening and Toolkit Deployment
+  hosts: local
+  become: yes
+  vars:
+    new_user: jack
+    new_group: deploy
+
+  tasks:
+    - name: 1. Create deploy group
+      group:
+        name: "{{ new_group }}"
+        state: present
+
+    - name: 2. Create devops user directory structures safely
+      file:
+        path: "/home/{{ new_user }}/linux-server-toolkit/{{ item }}"
+        state: directory
+        owner: "{{ new_user }}"
+        group: "{{ new_user }}"
+        mode: "0755"
+      loop:
+        - scripts
+        - logs
+
+    - name: 3. Deploy health check script
+      copy:
+        src: ../scripts/system_health.sh
+        dest: "/home/{{ new_user }}/linux-server-toolkit/scripts/system_health.sh"
+        owner: "{{ new_user }}"
+        mode: "0755"
+
+    - name: 4. Deploy log analyzer script
+      copy:
+        src: ../scripts/log_analyzer.sh
+        dest: "/home/{{ new_user }}/linux-server-toolkit/scripts/log_analyzer.sh"
+        owner: "{{ new_user }}"
+        mode: "0755"
+
+    - name: 5. Ensure cron job exists
+      cron:
+        name: "hourly system health check"
+        minute: "0"
+        job: "/home/{{ new_user }}/linux-server-toolkit/scripts/system_health.sh"
+        user: "{{ new_user }}"
+
+    - name: 6. Install useful packages
+      apt:
+        name:
+          - htop
+          - ncdu
+          - curl
+          - xz-utils
+        state: present
+        update_cache: yes
